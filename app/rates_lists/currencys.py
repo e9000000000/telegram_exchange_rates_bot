@@ -4,8 +4,10 @@ import aiohttp
 REQUEST_URL = 'http://www.floatrates.com/daily/usd.json'
 
 
-async def rates_list():
+async def rates() -> dict[str: float]:
     async with aiohttp.ClientSession() as session:
         async with session.get(REQUEST_URL) as response:
             data = await response.json()
-            return [{data[k]['code']: data[k]['rate']} for k in data] + [{'USD': 1.0}]
+            result = {data[k]['code'].upper(): data[k]['rate'] for k in data} 
+            result.update({'USD': 1.0})
+            return result
