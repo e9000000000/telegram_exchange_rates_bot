@@ -1,9 +1,17 @@
-from bot_core import BotCore
+from aiogram import Bot, Dispatcher, executor, types
+import aiohttp
 
+from config import TOKEN
 
-class Bot(BotCore):
-    def command_start(self, update, context):
-        context.bot.send_message(chat_id=update.effective_chat.id, text='Start.')
-    
-    def command_ping(self, update, context):
-        context.bot.send_message(chat_id=update.effective_chat.id, text='pong')
+bot = Bot(token=TOKEN)
+dp = Dispatcher(bot)
+
+@dp.message_handler(commands=['start', 'help'])
+async def start(message: types.Message):
+    await message.answer('Start.')
+
+@dp.message_handler(commands=['ping'])
+async def ping(message: types.Message):
+    await message.answer('pong')
+
+executor.start_polling(dp, skip_updates=True)
