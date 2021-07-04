@@ -1,7 +1,7 @@
 from aiogram import Bot, Dispatcher, executor, types
-import aiohttp
 
 from config import TOKEN
+from rates import rates_list
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
@@ -10,8 +10,11 @@ dp = Dispatcher(bot)
 async def start(message: types.Message):
     await message.answer('Start.')
 
-@dp.message_handler(commands=['ping'])
-async def ping(message: types.Message):
-    await message.answer('pong')
+@dp.message_handler(commands=['rates'])
+async def get_rates(message: types.Message):
+    #message.from_user.id
+    rates = '\n'.join(str(rate) for rate in await rates_list())
+    await message.answer(rates)
 
-executor.start_polling(dp, skip_updates=True)
+def start():
+    executor.start_polling(dp, skip_updates=True)

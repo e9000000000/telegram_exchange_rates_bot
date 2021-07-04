@@ -1,1 +1,4 @@
 import bot
+
+
+bot.start()
