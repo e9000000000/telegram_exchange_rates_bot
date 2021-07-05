@@ -1,3 +1,6 @@
+'''Info about exchange rates of state currencys like USD or RUB, or EUR'''
+
+
 import aiohttp
 
 
