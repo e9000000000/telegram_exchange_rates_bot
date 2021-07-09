@@ -1,4 +1,4 @@
 import os
 
 
-TOKEN = os.getenv('TGRATEBOTTOKEN')
+TOKEN = os.getenv("TGRATEBOTTOKEN")

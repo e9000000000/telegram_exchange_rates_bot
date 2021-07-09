@@ -1,4 +1,4 @@
 import bot
 
 
-bot.start()
+bot.run()
