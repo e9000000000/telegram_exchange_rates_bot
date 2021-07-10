@@ -39,6 +39,7 @@ async def get_rate(message: types.Message):
     If currency codes is invalid send error.
 
     Examples:
+    ```
         User: RUB USD
         Bot: 2433.32234
 
@@ -46,7 +47,8 @@ async def get_rate(message: types.Message):
         Bot: "FEIIFEEWF" is wrong code.
 
         User: few fwef wef wef
-        Bot: type "/help"
+        Bot: write "/help"
+    ```
     """
 
     codes = message.text.upper().split()
