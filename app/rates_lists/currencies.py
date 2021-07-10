@@ -1,4 +1,4 @@
-"""Info about exchange rates of state currencys like USD or RUB, or EUR"""
+"""Info about exchange rates of state currencies like USD or RUB, or EUR"""
 
 
 import aiohttp

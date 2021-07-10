@@ -1,8 +1,16 @@
 from aiogram import Bot, Dispatcher, executor, types
 
-from config import TOKEN
-from rates import rates_dict, rate
+from app.config import TOKEN
+from app.rates import all_rates, rate
 
+
+HELP_MESSAGE = """
+Bot to get exchange rates.
+
+`/start` - show this message
+`/rates` - get all awailable rates
+`CODE1 CODE2` - get rate `CODE1` to `CODE2` where codes like `EUR` or `USD`
+"""
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
@@ -12,15 +20,16 @@ dp = Dispatcher(bot)
 async def start(message: types.Message):
     """Start and help message about "how to use this bot"."""
 
-    await message.answer("Start.")
+    await message.answer(HELP_MESSAGE)
 
 
 @dp.message_handler(commands=["rates"])
 async def get_rates(message: types.Message):
     """Send a json to user with all exchange rates to USD."""
 
-    rates = "\n".join(str(rate) for rate in await rates_dict())
-    await message.answer(rates)
+    rates = await all_rates()
+    answer = "\n".join(f"{code} - {rates[code]}" for code in await all_rates())
+    await message.answer(answer)
 
 
 @dp.message_handler()
@@ -50,6 +59,7 @@ async def get_rate(message: types.Message):
         result = await rate(what, to_what)
     except ValueError as e:
         await message.answer(str(e))
+        return
     await message.answer(f"{1} {what} = {result} {to_what}")
 
 
