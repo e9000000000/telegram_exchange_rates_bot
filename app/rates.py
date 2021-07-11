@@ -1,9 +1,9 @@
-from aiocache import cached
+from aiocache import cached, Cache
 
 from app.utils import import_modules_from_dir
 
 
-@cached(60 * 60)
+@cached(60 * 60, cache=Cache.REDIS)
 async def all_rates() -> dict[str:float]:
     """
     Return exchange rates of all currencie to USD.

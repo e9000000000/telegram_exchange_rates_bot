@@ -1,4 +1,0 @@
-import bot
-
-
-bot.run()

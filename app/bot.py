@@ -25,7 +25,7 @@ async def start(message: types.Message):
 
 @dp.message_handler(commands=["rates"])
 async def get_rates(message: types.Message):
-    """Send a json to user with all exchange rates to USD."""
+    """Send all exchange rates to USD."""
 
     rates = await all_rates()
     answer = "\n".join(f"{code} - {rates[code]}" for code in await all_rates())
