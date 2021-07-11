@@ -1,3 +1,6 @@
+#env vars with secret info
+dev.env
+
 #vscode
 .vscode/
 

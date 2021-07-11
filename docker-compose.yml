@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  bot:
+    container_name: telegram_exchange_rates_bot
+    build: .
+    volumes:
+      - ./:/app
+    depends_on:
+      - redis
+    links:
+      - redis
+    environment:
+      - TGRATEBOTTOKEN
+  
+  redis:
+    container_name: redis
+    restart: always
+    image: redis

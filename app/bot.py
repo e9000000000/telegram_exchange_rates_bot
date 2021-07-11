@@ -7,9 +7,9 @@ from app.rates import all_rates, rate
 HELP_MESSAGE = """
 Bot to get exchange rates.
 
-`/start` - show this message
-`/rates` - get all awailable rates
-`CODE1 CODE2` - get rate `CODE1` to `CODE2` where codes like `EUR` or `USD`
+/start - show this message
+/rates - get all awailable rates
+CODE1 CODE2 - get rate CODE1 to CODE2 where CODE1 and CODE2 are currency codes like EUR or USD
 """
 
 bot = Bot(token=TOKEN)
