@@ -1,4 +1,6 @@
+import asyncio
+
 from service.collector import run
 
 
-run()
+asyncio.run(run())

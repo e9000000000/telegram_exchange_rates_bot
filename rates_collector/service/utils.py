@@ -1,6 +1,6 @@
 from importlib import import_module
 from types import ModuleType
-from os import listdir
+from os import listdir, path
 
 
 def import_modules_from_dir(path_to_dir: str) -> list[ModuleType]:
@@ -23,12 +23,12 @@ def import_modules_from_dir(path_to_dir: str) -> list[ModuleType]:
     ...
     ```
 
-    path to dir should be `dir1/subdir` or `dir1/subdir/`
+    path to dir should be `dir1/subdir` or `dir1/subdir/` (use "/" in windows too)
     """
 
     modules = []
     path_to_dir = path_to_dir if path_to_dir.endswith("/") else path_to_dir + "/"
-    files = listdir(path_to_dir)
+    files = listdir(path.join(*path_to_dir.split("/")))
     for file in files:
         if not file.endswith(".py") or file in ("__init__.py", "__main__.py"):
             continue
