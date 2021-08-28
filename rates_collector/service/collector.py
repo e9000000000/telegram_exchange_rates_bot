@@ -2,7 +2,7 @@ from asyncio import sleep
 
 from service.config import UPDATE_DELAY
 from service.utils import import_modules_from_dir
-from service.postgres import start, close, add_rates
+from service.postgres import connect, close, add_rates
 
 
 async def all_rates() -> dict[str:float]:
@@ -26,8 +26,10 @@ async def all_rates() -> dict[str:float]:
     return result
 
 
-async def run():
-    await start()
+async def run_forever():
+    """Run service forever."""
+
+    await connect()
     while 1:
         await add_rates(await all_rates())
         await sleep(UPDATE_DELAY)

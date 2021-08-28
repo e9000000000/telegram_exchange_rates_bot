@@ -1,6 +1,6 @@
 import pytest
 
-from app.bot import start, get_rate, get_rates, HELP_MESSAGE
+from service.bot import start, get_rate, get_rates, HELP_MESSAGE
 
 
 class MockMessage:
@@ -15,7 +15,7 @@ class MockMessage:
 @pytest.fixture
 def mock_all_rates_in_bot(mocker):
     mocker.patch(
-        "app.bot.all_rates",
+        "service.bot.all_rates",
         return_value={
             "RUB": 10.0,
             "EUR": 0.5,
@@ -27,7 +27,7 @@ def mock_all_rates_in_bot(mocker):
 @pytest.fixture
 def mock_all_rates_in_rates(mocker):
     mocker.patch(
-        "app.rates.all_rates",
+        "service.rates.all_rates",
         return_value={
             "RUB": 10.0,
             "EUR": 0.5,
@@ -38,7 +38,7 @@ def mock_all_rates_in_rates(mocker):
 
 @pytest.fixture
 def mock_rate(mocker):
-    mocker.patch("app.bot.rate", return_value=1)
+    mocker.patch("service.bot.rate", return_value=1)
 
 
 @pytest.mark.asyncio

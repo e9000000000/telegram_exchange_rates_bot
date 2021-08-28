@@ -1,12 +1,12 @@
 import pytest
 
-from app.rates import rate, all_rates
+from service.rates import rate, all_rates
 
 
 @pytest.fixture
 def mock_all_rates(mocker):
     mocker.patch(
-        "app.rates.all_rates",
+        "service.rates.all_rates",
         return_value={
             "RUB": 10.0,
             "USD": 1.0,
@@ -26,7 +26,7 @@ def mock_import_modules_from_dir(mocker):
             return {"USD": 1.0}
 
     mocker.patch(
-        "app.rates.import_modules_from_dir", return_value=[Module1(), Module2()]
+        "service.rates.import_modules_from_dir", return_value=[Module1(), Module2()]
     )
 
 

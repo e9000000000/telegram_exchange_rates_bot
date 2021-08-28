@@ -1,7 +1,7 @@
 from aiogram import Bot, Dispatcher, executor, types
 
-from app.config import TOKEN
-from app.rates import all_rates, rate
+from service.config import TOKEN
+from service.rates import all_rates, rate
 
 
 HELP_MESSAGE = """

@@ -2,18 +2,51 @@ version: '3'
 
 services:
   bot:
-    container_name: telegram_exchange_rates_bot
-    build: .
+    container_name: bot
+    build: ./bot
     volumes:
-      - ./:/app
+      - ./bot:/service
     depends_on:
       - redis
+      - rates_handler
     links:
       - redis
+      - rates_handler
     environment:
       - TGRATEBOTTOKEN
   
+  rates_handler:
+    container_name: rates_handler
+    build: ./rates_handler
+    volumes:
+      - ./rates_handler:/service
+    depends_on:
+      - postgres
+    links:
+      - postgres
+
+  rates_collector:
+    container_name: rates_collector
+    build: ./rates_collector
+    volumes:
+      - ./rates_collector:/service
+    depends_on:
+      - postgres
+    links:
+      - postgres
+  
   redis:
     container_name: redis
-    restart: always
+    restart: on-failure
     image: redis
+
+  postgres:
+    container_name: postgres
+    restart: on-failure
+    image: postgres
+    environment:
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB=ratesbot
+    volumes:
+      - ~/pgdata:/var/lib/postgresql/data

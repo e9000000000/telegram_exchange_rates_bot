@@ -7,7 +7,9 @@ connection = None
 cursor = None
 
 
-async def start():
+async def connect() -> None:
+    """Connect to database and prepare it for using."""
+
     global connection, cursor
 
     connection = psycopg2.connect(
@@ -20,19 +22,25 @@ async def start():
     await commit_changes()
 
 
-async def close():
+async def close() -> None:
+    """Close connection to database."""
+
     global cursor
 
     cursor.close()
 
 
-async def set_timezone():
+async def set_timezone() -> None:
+    """Set database timezone to `TIMEZONE` variable from `config.py`."""
+
     global cursor
 
     cursor.execute(f"SET TIME ZONE '{TIMEZONE}'")
 
 
-async def create_missing_tables():
+async def create_missing_tables() -> None:
+    """Create missing tables `receiving_datetimes` and `rates` if they does not exist."""
+
     global cursor
 
     cursor.execute("SELECT * FROM pg_catalog.pg_tables WHERE schemaname='public'")
@@ -65,13 +73,23 @@ async def create_missing_tables():
         cursor.execute("CREATE INDEX rates_code ON rates USING hash (rate);")
 
 
-async def commit_changes():
+async def commit_changes() -> None:
+    """Commit changes to database."""
+
     global cursor
 
     cursor.execute("COMMIT")
 
 
-async def add_rates(rates: list[dict[str:float]], is_commit=False):
+async def add_rates(rates: dict[str:float], is_commit: bool = False) -> None:
+    """
+    Put all rates to database to `rates` table, connect them with datetime when function was called.
+
+    Args:
+        rates - list of rates to `USD`, example: `{'USD': 1, 'RUB': 111.12}`.
+        is_commit - commit changes to database or not.
+    """
+
     global cursor
 
     cursor.execute("INSERT INTO receiving_datetimes VALUES (DEFAULT)")
@@ -92,16 +110,3 @@ async def add_rates(rates: list[dict[str:float]], is_commit=False):
 
     if is_commit:
         await commit_changes()
-
-
-def get_all_rates():
-    cursor.execute(
-        "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='rates'"
-    )
-    columns = [
-        tupple_with_only_one_culumn_name[0]
-        for tupple_with_only_one_culumn_name in cursor.fetchall()
-    ]
-    cursor.execute("SELECT * FROM rates")
-    rates = cursor.fetchall()
-    return [{column: value for column, value in zip(columns, row)} for row in rates]

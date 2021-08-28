@@ -1,10 +1,3 @@
-from aiocache import cached, Cache
-
-from app.config import REDIS_HOST, REDIS_PORT
-from app.utils import import_modules_from_dir
-
-
-@cached(ttl=60 * 60, cache=Cache.REDIS, endpoint=REDIS_HOST, port=REDIS_PORT)
 async def all_rates() -> dict[str:float]:
     """
     Return exchange rates of all currencie to USD.
@@ -20,9 +13,6 @@ async def all_rates() -> dict[str:float]:
     """
 
     result = {}
-    for module in import_modules_from_dir("app/rates_lists"):
-        result.update(await module.rates())
-
     return result
 
 
@@ -31,7 +21,7 @@ async def rate(what: str, to_what: str) -> float:
     Return exchange rate of one currency to another or raise exception if args are invalid.
 
     Args:
-    both -- a currency codes like `USD`, `RUB`.
+    both - a currency codes like `USD`, `RUB`.
 
     Return:
     rate between currencys like

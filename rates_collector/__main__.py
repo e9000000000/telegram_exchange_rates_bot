@@ -1,6 +1,6 @@
 import asyncio
 
-from service.collector import run
+from service.collector import run_forever
 
 
-asyncio.run(run())
+asyncio.run(run_forever())
