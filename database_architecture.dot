@@ -5,7 +5,7 @@ Database architecture.
 digraph Database {
     rates [shape=record, label="{rates|{
         {id|1|2|3|4}|
-        {receiving_datetime|<receiving_datetime> fk|fk|fk|fk}|
+        {receiving_datetime|<receiving_datetime_id> 1|1|2|2}|
         {code|USD|RUB|USD|RUB}|
         {rate|1|12.15|1|20.21}
     }}"];
@@ -14,5 +14,5 @@ digraph Database {
         {datetime|12/15 в 11:50|12/15 12:50}
     }}"];
 
-    receiving_datetimes -> rates:receiving_datetime;
+    receiving_datetimes -> rates:receiving_datetime_id;
 }

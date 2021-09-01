@@ -1,9 +1,11 @@
-version: '3'
+version: '3.4'
 
 services:
   bot:
     container_name: bot
-    build: ./bot
+    build:
+      context: ./bot
+      target: prod
     volumes:
       - ./bot:/service
     depends_on:
@@ -17,7 +19,9 @@ services:
   
   rates_handler:
     container_name: rates_handler
-    build: ./rates_handler
+    build:
+      context: ./rates_handler
+      target: prod
     volumes:
       - ./rates_handler:/service
     depends_on:
@@ -27,7 +31,9 @@ services:
 
   rates_collector:
     container_name: rates_collector
-    build: ./rates_collector
+    build:
+      context: ./rates_collector
+      target: prod
     volumes:
       - ./rates_collector:/service
     depends_on:
