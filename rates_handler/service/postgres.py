@@ -5,13 +5,22 @@ import psycopg2
 from service.config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
 
-connection = psycopg2.connect(
-    host=DB_HOST, port=DB_PORT, database=DB_NAME, user=DB_USER, password=DB_PASSWORD
-)
-cursor = connection.cursor()
+connection = None
+cursor = None
 
 
-async def close() -> None:
+def connect() -> None:
+    """Connect to database and prepare it for using."""
+
+    global connection, cursor
+
+    connection = psycopg2.connect(
+        host=DB_HOST, port=DB_PORT, database=DB_NAME, user=DB_USER, password=DB_PASSWORD
+    )
+    cursor = connection.cursor()
+
+
+def close() -> None:
     """Close connection to database."""
 
     global cursor
@@ -29,14 +38,14 @@ async def get_rates(
     With default args returns newest rates of all currencys.
 
     Args:
-        datatime_from - lower bound of time period to get rates (included).
-            if it's None, then lower bound will be absent.
+    `datatime_from` - lower bound of time period to get rates (included).
+    if it's `None`, then lower bound will be absent.
 
-        datatime_to - higher bound of time period to get rates (included).
-            if it's None, then higher bound will be absent.
+    `datatime_to` - higher bound of time period to get rates (included).
+    if it's `None`, then higher bound will be absent.
 
-        currency_codes - currency codes (looks like `USD` or `EUR`) which you want to get info about.
-            If it's empty list, then rates of all currencys from database will be returned.
+    `currency_codes` - currency codes (looks like `USD` or `EUR`) which you want to get info about.
+    If it's empty list, then rates of all currencys from database will be returned.
 
     Return:
         {

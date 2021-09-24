@@ -1,56 +1,64 @@
 import pytest
+from pytest_mock import MockerFixture
 
-from service.rates import rate, all_rates
+from datetime import datetime
+
+from service.rates import actual_rate, actual_rates
 
 
 @pytest.fixture
-def mock_all_rates(mocker):
-    mocker.patch(
-        "service.rates.all_rates",
-        return_value={
+def mock_get_rates(mocker: MockerFixture):
+    async def new_get_rates(
+        datetime_from: datetime = None,
+        datetime_to: datetime = None,
+        currency_codes: str = [],
+    ):
+        codes = {
             "RUB": 10.0,
             "USD": 1.0,
             "EUR": 0.5,
-        },
-    )
-
-
-@pytest.fixture
-def mock_import_modules_from_dir(mocker):
-    class Module1:
-        async def rates(self):
-            return {"RUB": 3.0}
-
-    class Module2:
-        async def rates(self):
-            return {"USD": 1.0}
+        }
+        if len(currency_codes) == 0:
+            currency_codes = list(codes)
+        if not set(currency_codes).issubset(set(codes)):
+            return {}
+        return {
+            "2021-09-01T04:29:57.357980": {
+                code: codes[code] for code in currency_codes if code in codes
+            }
+        }
 
     mocker.patch(
-        "service.rates.import_modules_from_dir", return_value=[Module1(), Module2()]
+        "service.rates.get_rates",
+        wraps=new_get_rates,
     )
 
 
 @pytest.mark.asyncio
-async def test_all_rates(mock_import_modules_from_dir):
-    assert sorted(await all_rates()) == sorted({"RUB": 3.0, "USD": 1.0})
+async def test_all_rates(mock_get_rates):
+    assert sorted(await actual_rates()) == sorted({"RUB": 10.0, "USD": 1.0, "EUR": 0.5})
 
 
 @pytest.mark.asyncio
-async def test_rub_to_usd(mock_all_rates):
-    assert await rate("RUB", "USD") == 0.1
+async def test_rub_to_usd(mock_get_rates):
+    assert await actual_rate("RUB", "USD") == 0.1
 
 
 @pytest.mark.asyncio
-async def test_eur_to_rub(mock_all_rates):
-    assert await rate("EUR", "RUB") == 20.0
+async def test_eur_to_rub(mock_get_rates):
+    assert await actual_rate("EUR", "RUB") == 20.0
 
 
 @pytest.mark.asyncio
-async def test_invalid_codes(mock_all_rates):
+async def test_invalid_codes(mock_get_rates):
     try:
-        await rate("ewfewf", "efwefwwe")
+        await actual_rate("ewfewf", "efwefwwe")
+        assert not "Should raise an error"
     except ValueError as e:
-        assert str(e) == 'Can\'t find exchange rate of "ewfewf".'
+        assert (
+            str(e)
+            == "invalid data from database. code1=ewfewf code2=efwefwwe result={}"
+        )
         return
-
-    assert not "error raised"
+    except Exception as e:
+        assert not f"Should raise ValueError, not {type(e)}"

@@ -2,7 +2,7 @@ import os
 
 
 # postgresql
-DB_HOST = os.getenv("TGRATESBOT_DB_HOST", "localhost")
+DB_HOST = os.getenv("TGRATESBOT_DB_HOST", "postgres")
 DB_PORT = os.getenv("TGRATESBOT_DB_PORT", "5432")
 DB_NAME = os.getenv("TGRATESBOT_DB_NAME", "ratesbot")
 DB_USER = os.getenv("POSTGRES_USER")

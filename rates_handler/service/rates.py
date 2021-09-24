@@ -1,8 +1,13 @@
-async def all_rates() -> dict[str:float]:
+from service.postgres import get_rates
+
+
+async def actual_rates(currency_codes: list[str] = []) -> dict[str:float]:
     """
-    Return exchange rates of all currencie to USD.
-    Info about rates gets from the internet, so you should have internet connection.
-    Cacheing for one hour.
+    Return latest exchange rates of currencies to USD.
+
+    Args:
+    currency_codes - list of currency codes, something like `["USD", "EUR"]`
+    if it's empty list function'll return rates for all currencies
 
     Return:
     dict like:
@@ -12,11 +17,16 @@ async def all_rates() -> dict[str:float]:
         }
     """
 
-    result = {}
-    return result
+    result = await get_rates(currency_codes=currency_codes)
+    if len(result) != 1:
+        raise ValueError(
+            f"invalid data from database. codes={currency_codes} result={result}"
+        )
+
+    return list(result.values())[0]
 
 
-async def rate(what: str, to_what: str) -> float:
+async def actual_rate(currency1: str, currency2: str) -> float:
     """
     Return exchange rate of one currency to another or raise exception if args are invalid.
 
@@ -24,13 +34,20 @@ async def rate(what: str, to_what: str) -> float:
     both - a currency codes like `USD`, `RUB`.
 
     Return:
-    rate between currencys like
-    1 `what` = 23.332 `to_what`
+    rate between currencies like
+    1 `currency1` = 23.332 `currency2`
     """
 
-    rates = await all_rates()
-    for currency in (what, to_what):
-        if currency not in rates:
-            raise ValueError(f'Can\'t find exchange rate of "{currency}".')
+    result = await get_rates(currency_codes=[currency1, currency2])
+    if len(result) != 1:
+        raise ValueError(
+            f"invalid data from database. code1={currency1} code2={currency2} result={result}"
+        )
 
-    return rates[to_what] / rates[what]
+    rates = list(result.values())[0]
+    if currency1 not in rates or currency2 not in rates:
+        raise ValueError(
+            f"cant find currency codes in database. code1={currency1} code2={currency2} result={rates}"
+        )
+
+    return rates[currency2] / rates[currency1]
