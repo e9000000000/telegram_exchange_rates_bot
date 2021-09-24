@@ -9,10 +9,8 @@ services:
     volumes:
       - ./bot:/service
     depends_on:
-      - redis
       - rates_handler
     links:
-      - redis
       - rates_handler
     environment:
       - TGRATESBOT_TOKEN
@@ -54,11 +52,6 @@ services:
       - TGRATESBOT_DB_NAME
       - POSTGRES_USER
       - POSTGRES_PASSWORD
-  
-  redis:
-    container_name: redis
-    restart: on-failure
-    image: redis
 
   postgres:
     container_name: postgres

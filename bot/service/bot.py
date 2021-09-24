@@ -1,7 +1,7 @@
 from aiogram import Bot, Dispatcher, executor, types
 
 from service.config import TOKEN
-from service.rates import all_rates, rate
+from service.rates import api
 
 
 HELP_MESSAGE = """
@@ -27,8 +27,8 @@ async def start(message: types.Message):
 async def get_rates(message: types.Message):
     """Send all exchange rates to USD."""
 
-    rates = await all_rates()
-    answer = "\n".join(f"{code} - {rates[code]}" for code in await all_rates())
+    rates = await api()
+    answer = "\n".join(f"{code} - {rates[code]}" for code in rates)
     await message.answer(answer)
 
 
@@ -58,7 +58,8 @@ async def get_rate(message: types.Message):
 
     what, to_what = codes[0], codes[1]
     try:
-        result = await rate(what, to_what)
+        result = "12_15"
+        # result = await rate(what, to_what)
     except ValueError as e:
         await message.answer(str(e))
         return
@@ -66,6 +67,6 @@ async def get_rate(message: types.Message):
 
 
 def run():
-    """Start a loop or something idk where it handles bot messages."""
+    """Start a loop or something idk where it handles users messages."""
 
     executor.start_polling(dp, skip_updates=True)
