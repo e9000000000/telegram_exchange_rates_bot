@@ -15,7 +15,7 @@ services:
       - redis
       - rates_handler
     environment:
-      - TGRATEBOTTOKEN
+      - TGRATESBOT_TOKEN
   
   rates_handler:
     container_name: rates_handler
@@ -28,6 +28,14 @@ services:
       - postgres
     links:
       - postgres
+    ports:
+      - 8000:8000
+    environment:
+      - TGRATESBOT_DB_HOST
+      - TGRATESBOT_DB_PORT
+      - TGRATESBOT_DB_NAME
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
 
   rates_collector:
     container_name: rates_collector
@@ -40,6 +48,12 @@ services:
       - postgres
     links:
       - postgres
+    environment:
+      - TGRATESBOT_DB_HOST
+      - TGRATESBOT_DB_PORT
+      - TGRATESBOT_DB_NAME
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
   
   redis:
     container_name: redis
