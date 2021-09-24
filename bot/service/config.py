@@ -2,9 +2,9 @@ import os
 
 
 # bot
-TOKEN = os.getenv("TBRATESBOT_TOKEN")
+TOKEN = os.getenv("TGRATESBOT_TOKEN")
 if TOKEN is None:
-    raise ValueError('Set up "TBRATESBOT_TOKEN" env variable to your bot token.')
+    raise ValueError('Set up "TGRATESBOT_TOKEN" env variable to your bot token.')
 
 # cache
 REDIS_HOST = "redis"
