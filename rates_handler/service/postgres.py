@@ -19,6 +19,42 @@ def connect() -> None:
     )
     cursor = connection.cursor()
 
+    create_missing_tables()
+    commit_changes()
+
+
+def create_missing_tables() -> None:
+    """Create `users` and `users_subscriptions` table if it's missing"""
+
+    global cursor
+
+    cursor.execute("SELECT * FROM pg_catalog.pg_tables WHERE schemaname='public'")
+    tables = cursor.fetchall()
+    table_names = [table[1] for table in tables]
+
+    if "users" not in table_names:
+        cursor.execute(
+            "CREATE TABLE users (\
+                id INT PRIMARY KEY,\
+                everyday_notification BOOLEAN DEFAULT FALSE\
+            )"
+        )
+        cursor.execute(
+            "CREATE INDEX users_everyday_notification ON users USING hash (everyday_notification)"
+        )
+
+    if "users_subscriptions" not in table_names:
+        cursor.execute(
+            "CREATE TABLE users_subscriptions (\
+                user_id INT,\
+                code VARCHAR(10),\
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE\
+            )"
+        )
+        cursor.execute(
+            "CREATE INDEX users_subscriptions_user_id ON users_subscriptions USING hash (user_id);"
+        )
+
 
 def close() -> None:
     """Close connection to database."""
@@ -26,6 +62,14 @@ def close() -> None:
     global cursor
 
     cursor.close()
+
+
+def commit_changes() -> None:
+    """Commit changes to database."""
+
+    global cursor
+
+    cursor.execute("COMMIT")
 
 
 async def get_rates(
@@ -38,6 +82,7 @@ async def get_rates(
     With default args returns newest rates of all currencys.
 
     Args:
+
     `datatime_from` - lower bound of time period to get rates (included).
     if it's `None`, then lower bound will be absent.
 

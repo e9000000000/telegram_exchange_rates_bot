@@ -3,7 +3,7 @@ from pytest_mock import MockerFixture
 
 from datetime import datetime
 
-from service.rates import actual_rate, actual_rates
+from service.rates import actual_rate, get_rates
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def mock_get_rates(mocker: MockerFixture):
 
 @pytest.mark.asyncio
 async def test_all_rates(mock_get_rates):
-    assert sorted(await actual_rates()) == sorted({"RUB": 10.0, "USD": 1.0, "EUR": 0.5})
+    assert sorted(await get_rates()) == sorted({"RUB": 10.0, "USD": 1.0, "EUR": 0.5})
 
 
 @pytest.mark.asyncio
@@ -57,7 +57,7 @@ async def test_invalid_codes(mock_get_rates):
     except ValueError as e:
         assert (
             str(e)
-            == "invalid data from database. code1=ewfewf code2=efwefwwe result={}"
+            == "invalid data from database. code1=ewfewf code2=efwefwwe finded={}"
         )
         return
     except Exception as e:
