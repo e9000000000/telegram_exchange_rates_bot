@@ -165,3 +165,47 @@ async def get_rates(
         result[datetime_][code] = rate
 
     return result
+
+
+async def create_user_if_not_exists(id: int) -> None:
+    """
+    Create user if there is no user with this id in database.
+
+    Args:
+
+    id - user telegram id
+    """
+
+    cursor.execute("SELECT id FROM users WHERE id=%s", (id,))
+    result = cursor.fetchall()
+    if len(result) <= 0:
+        cursor.execute("INSERT INTO users VALUES (%s)", (id,))
+        commit_changes()
+
+
+async def toggle_user_everyday_notification(id: int) -> bool:
+    """
+    Toggle should we send rates everyday to user or not.
+
+    Args:
+
+    `id` - user telegram id
+
+    Return:
+
+    `True` if notifications turned on after toggling else `False`
+    """
+
+    await create_user_if_not_exists(id)
+
+    cursor.execute("SELECT everyday_notification FROM users WHERE id=%s", (id,))
+    result = cursor.fetchall()
+    if len(result) > 0 and len(result[0]) > 0:
+        old_value = result[0][0]
+        cursor.execute(
+            "UPDATE users SET everyday_notification=%s WHERE id=%s", (not old_value, id)
+        )
+
+        commit_changes()
+        return not old_value
+    raise ValueError(f"Can't find user with id={id}")
