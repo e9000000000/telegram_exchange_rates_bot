@@ -2,7 +2,15 @@ import atexit
 
 from fastapi import FastAPI, Response
 
-from service.postgres import connect, close, toggle_user_everyday_notification
+from service.postgres import (
+    connect,
+    close,
+    toggle_user_everyday_notification,
+    get_users_subscriptions,
+    add_currency_to_subscriptions,
+    remove_currency_from_user_subscriptions,
+    clear_user_subscriptions,
+)
 from service.rates import actual_rate, get_rates
 
 
@@ -38,6 +46,15 @@ async def rate(currency1: str, currency2: str, response: Response):
         return {"datail": str(e)}
 
 
+@app.get(
+    "/users_subscriptions",
+    status_code=200,
+    description="All users and currencies they subscribed at.",
+)
+async def users_subscriptions():
+    return {"users": await get_users_subscriptions()}
+
+
 @app.patch(
     "/users/{user_id}/toggle_everyday_notifications",
     status_code=200,
@@ -50,3 +67,33 @@ async def toggle_receive_rates(user_id: int, response: Response):
     except Exception as e:
         response.status_code = 500
         return {"detail": str(e)}
+
+
+@app.patch(
+    "/users/{user_id}/subscribed_currency/{code}",
+    status_code=200,
+    description="Add currency to user subscribes list",
+)
+async def add_currency(user_id: int, code: str, response: Response):
+    await add_currency_to_subscriptions(user_id, code)
+    return {}
+
+
+@app.delete(
+    "/users/{user_id}/subscribed_currency/{code}",
+    status_code=200,
+    description="Delete currency from user subscribes list",
+)
+async def remove_currency(user_id: int, code: str, response: Response):
+    await remove_currency_from_user_subscriptions(user_id, code)
+    return {}
+
+
+@app.delete(
+    "/users/{user_id}/subscribed_currency",
+    status_code=200,
+    description="Clear user subscribes list",
+)
+async def clear_currencys(user_id: int):
+    await clear_user_subscriptions(user_id)
+    return {}
