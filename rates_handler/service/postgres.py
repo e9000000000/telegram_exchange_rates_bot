@@ -229,9 +229,9 @@ async def get_user_subscriptions(user_id: int) -> list[str]:
     return [code for (code,) in result]
 
 
-async def get_users_subscriptions() -> dict[int : list[str]]:
+async def get_notifiable_users_subscriptions() -> dict[int : list[str]]:
     """
-    Get user ids and user subscriptions.
+    Get user ids and user subscriptions. Only for users with `everyday_notification` true.
 
     Return:
 
@@ -243,7 +243,10 @@ async def get_users_subscriptions() -> dict[int : list[str]]:
     """
 
     users = {}
-    cursor.execute("SELECT user_id, code FROM users_subscriptions")
+    cursor.execute(
+        "SELECT user_id, code FROM users_subscriptions WHERE user_id IN \
+        (SELECT user_id FROM users WHERE users.everyday_notification = true)"
+    )
     result = cursor.fetchall()
     for user_id, code in result:
         if user_id not in users:

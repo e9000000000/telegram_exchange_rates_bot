@@ -8,7 +8,7 @@ from service.postgres import (
     connect,
     close,
     toggle_user_everyday_notification,
-    get_users_subscriptions,
+    get_notifiable_users_subscriptions,
     add_currency_to_subscriptions,
     remove_currency_from_user_subscriptions,
     clear_user_subscriptions,
@@ -57,10 +57,10 @@ async def rate(currency1: str, currency2: str):
 @app.get(
     "/users_subscriptions",
     status_code=200,
-    description="All users and currencies they subscribed at.",
+    description="Return users with everyday notifications turned on and currencies they subscribed at.",
 )
 async def users_subscriptions(api_key: APIKey = Depends(get_api_key)):
-    return {"users": await get_users_subscriptions()}
+    return {"users": await get_notifiable_users_subscriptions()}
 
 
 @app.patch(
