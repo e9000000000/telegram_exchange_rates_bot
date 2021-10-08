@@ -9,26 +9,26 @@ services:
     volumes:
       - ./bot:/service
     depends_on:
-      - rates_handler
+      - core
     links:
-      - rates_handler
+      - core
     environment:
       - TGRATESBOT_TOKEN
       - TGRATESBOT_API_KEY
   
-  rates_handler:
-    container_name: rates_handler
+  core:
+    container_name: core
     build:
-      context: ./rates_handler
+      context: ./core
       target: prod
     volumes:
-      - ./rates_handler:/service
+      - ./core:/service
     depends_on:
       - postgres
     links:
       - postgres
     ports:
-      - 8000:8000
+      - 127.0.0.1:8000:8000
     environment:
       - TGRATESBOT_DB_HOST
       - TGRATESBOT_DB_PORT

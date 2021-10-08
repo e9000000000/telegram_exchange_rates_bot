@@ -46,7 +46,7 @@ def create_missing_tables() -> None:
     if "users_subscriptions" not in table_names:
         cursor.execute(
             "CREATE TABLE users_subscriptions (\
-                user_id INT,\
+                user_id BIGINT,\
                 code VARCHAR(10),\
                 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE\
             )"
@@ -207,9 +207,9 @@ async def toggle_user_everyday_notification(id: int) -> bool:
     raise ValueError(f"Can't find user with id={id}")
 
 
-async def get_user_subscriptions(user_id: int) -> list[str]:
+async def get_user_subscriptions(user_id: int) -> dict[str:float]:
     """
-    Get currency codes user subscribed at.
+    Get currency codes and rates user subscribed at.
 
     Args:
 
@@ -217,16 +217,21 @@ async def get_user_subscriptions(user_id: int) -> list[str]:
 
     Return:
 
-    list of currency codes
+    dict of currency codes as keys and rates
     """
 
     await create_user_if_not_exists(user_id)
 
     cursor.execute(
-        "SELECT code FROM users_subscriptions WHERE user_id = %s", (user_id,)
+        "SELECT code FROM users_subscriptions WHERE user_id = %s ORDER BY code",
+        (user_id,),
     )
     result = cursor.fetchall()
-    return [code for (code,) in result]
+    subscribed_rates = [code for (code,) in result]
+    all_rates = await get_rates()
+    for key in all_rates:
+        rates = all_rates[key]
+        return {code: rates[code] for code in rates if code in subscribed_rates}
 
 
 async def get_notifiable_users_subscriptions() -> dict[int : list[str]]:
@@ -257,10 +262,10 @@ async def get_notifiable_users_subscriptions() -> dict[int : list[str]]:
     return users
 
 
-async def add_currency_to_subscriptions(user_id: int, code: str) -> None:
+async def toggle_currency_in_subscriptions(user_id: int, code: str) -> None:
     """
     Add currency code to `users_subscriptions` table.
-    if user already subscribed - do nothing
+    if user already subscribed - delete code from table.
 
     Args:
 
@@ -273,38 +278,35 @@ async def add_currency_to_subscriptions(user_id: int, code: str) -> None:
 
     user_subscriptions = await get_user_subscriptions(user_id)
     if code in user_subscriptions:
-        return
+        cursor.execute(
+            "DELETE FROM users_subscriptions WHERE user_id = %s AND code = %s",
+            (user_id, code),
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO users_subscriptions VALUES (%s, %s)", (user_id, code)
+        )
 
-    cursor.execute("INSERT INTO users_subscriptions VALUES (%s, %s)", (user_id, code))
 
-
-async def remove_currency_from_user_subscriptions(user_id: int, code: str) -> None:
+async def get_user_currency_statuses(user_id: int) -> dict[str:bool]:
     """
-    Remove currency code from `users_subscriptions` table.
-    if there is no that code in subscriptions - do nothing
+    Get currencies status (user subscribed or not).
 
     Args:
 
     user_id - telegram user id
 
-    code - currency code
+    Return:
+
+    dict of currency codes as key and is user subscribed to this currency
     """
 
-    code = code.upper()
+    result = await get_rates()
+    for key in result:
+        all_codes = result[key]
+    if len(result) <= 0:
+        return []
 
-    cursor.execute(
-        "DELETE FROM users_subscriptions WHERE user_id = %s AND code = %s",
-        (user_id, code),
-    )
+    subscriptions = await get_user_subscriptions(user_id)
 
-
-async def clear_user_subscriptions(user_id: int) -> None:
-    """
-    Remove all rows from `users_subscriptions` with specified `user_id`
-
-    Args:
-
-    user_id - telegram user id
-    """
-
-    cursor.execute("DELETE FROM users_subscriptions WHERE user_id = %s", (user_id,))
+    return {code: code in subscriptions for code in sorted(all_codes)}

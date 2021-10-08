@@ -1,4 +1,4 @@
-from service.bot import run
+from service.bot_handlers import run
 
 
 run()

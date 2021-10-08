@@ -4,5 +4,6 @@ pytest
 pytest-asyncio
 pytest-mock
 fastapi
+fastapi_pagination
 psycopg2
 uvicorn
