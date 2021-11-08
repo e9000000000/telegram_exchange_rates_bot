@@ -9,10 +9,11 @@ async def api(path: str = "", method: str = "GET", **vars):
 
     Args:
     path - url subdirectory
+    method - request method (GET, POST, PATCH, ...)
     vars - query variables
 
     Return:
-    json api response without any changes
+    json response without any changes
     """
 
     if path.startswith("/"):
