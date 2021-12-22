@@ -1,12 +1,14 @@
 from datetime import datetime
 
 import psycopg2
+from psycopg2._psycopg import connection as Connection
+from psycopg2._psycopg import cursor as Cursor
 
 from service.config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
 
-connection = None
-cursor = None
+connection: Connection | None = None
+cursor: Cursor | None = None
 
 
 def connect() -> None:
@@ -26,7 +28,7 @@ def connect() -> None:
 def create_missing_tables() -> None:
     """Create `users` and `users_subscriptions` table if it's missing"""
 
-    global cursor
+    if not cursor: raise ValueError("not connected to database")
 
     cursor.execute("SELECT * FROM pg_catalog.pg_tables WHERE schemaname='public'")
     tables = cursor.fetchall()
@@ -35,19 +37,18 @@ def create_missing_tables() -> None:
     if "users" not in table_names:
         cursor.execute(
             "CREATE TABLE users (\
-                id INT PRIMARY KEY,\
-                everyday_notification BOOLEAN DEFAULT FALSE\
+                id SERIAL PRIMARY KEY,\
+                tg_id BIGINT\
             )"
         )
-        cursor.execute(
-            "CREATE INDEX users_everyday_notification ON users USING hash (everyday_notification)"
-        )
+        cursor.execute("CREATE INDEX users_tg_id ON users USING hash (tg_id)")
 
     if "users_subscriptions" not in table_names:
         cursor.execute(
             "CREATE TABLE users_subscriptions (\
-                user_id BIGINT,\
-                code VARCHAR(10),\
+                user_id INT,\
+                code1 VARCHAR(10),\
+                code2 VARCHAR(10),\
                 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE\
             )"
         )
@@ -55,26 +56,30 @@ def create_missing_tables() -> None:
             "CREATE INDEX users_subscriptions_user_id ON users_subscriptions USING hash (user_id);"
         )
 
+    commit_changes()
+
 
 def close() -> None:
     """Close connection to database."""
 
+    if not cursor: raise ValueError("not connected to database")
     cursor.close()
 
 
 def commit_changes() -> None:
     """Commit changes to database."""
 
+    if not cursor: raise ValueError("not connected to database")
     cursor.execute("COMMIT")
 
 
 async def get_rates(
     datetime_from: datetime = None,
     datetime_to: datetime = None,
-    currency_codes: str = [],
-) -> dict[datetime : dict[str:float]]:
+    currency_codes: list = [],
+) -> dict[datetime, dict[str, float]]:
     """
-    Get info about currencys rates from database.
+    Get info about currencys rates from database. (currency to usd)
     With default args returns newest rates of all currencys.
 
     Args:
@@ -98,6 +103,8 @@ async def get_rates(
         }
     """
 
+    if not cursor: raise ValueError("not connected to database")
+
     sql = """
         SELECT
             datetimes.datetime,
@@ -110,6 +117,7 @@ async def get_rates(
         ON
             rates.received_datetime_id = datetimes.id
         """
+
     sql_vars = []
     sql_conditions = []
 
@@ -163,150 +171,167 @@ async def get_rates(
     return result
 
 
-async def create_user_if_not_exists(id: int) -> None:
+async def get_or_create_user_id_by_tg_id(tg_id: int) -> int:
     """
-    Create user if there is no user with this id in database.
+    Return user `id` from `users` table
+    Create user if there is no user with this tg_id in database.
 
     Args:
 
-    id - telegram user id
-    """
-
-    cursor.execute("SELECT id FROM users WHERE id=%s", (id,))
-    result = cursor.fetchall()
-    if len(result) <= 0:
-        cursor.execute("INSERT INTO users VALUES (%s)", (id,))
-        commit_changes()
-
-
-async def toggle_user_everyday_notification(id: int) -> bool:
-    """
-    Toggle should we send rates everyday to user or not.
-
-    Args:
-
-    `id` - telegram user id
+    tg_id - telegram user id
 
     Return:
 
-    `True` if notifications turned on after toggling else `False`
+    user id
     """
 
-    await create_user_if_not_exists(id)
+    if not cursor: raise ValueError("not connected to database")
 
-    cursor.execute("SELECT everyday_notification FROM users WHERE id=%s", (id,))
-    result = cursor.fetchall()
-    if len(result) > 0 and len(result[0]) > 0:
-        old_value = result[0][0]
-        cursor.execute(
-            "UPDATE users SET everyday_notification=%s WHERE id=%s", (not old_value, id)
-        )
-
+    for _ in range(2):
+        cursor.execute("SELECT id FROM users WHERE tg_id=%s", (tg_id,))
+        result = cursor.fetchall()
+        if result:
+            return result[0][0]
+        cursor.execute("INSERT INTO users (tg_id) VALUES (%s)", (tg_id,))
         commit_changes()
-        return not old_value
-    raise ValueError(f"Can't find user with id={id}")
+    raise psycopg2.DatabaseError("can't get or create user for unknown reasons")
 
 
-async def get_user_subscriptions(user_id: int) -> dict[str:float]:
+async def get_user_subscriptions(tg_id: int) -> list[dict[str, str | float]]:
     """
     Get currency codes and rates user subscribed at.
 
     Args:
 
-    user_id - telegram user id
+    tg_id - telegram user id
 
     Return:
 
-    dict of currency codes as keys and rates
+    list of dicts with two currency codes and rate
     """
 
-    await create_user_if_not_exists(user_id)
+    if not cursor: raise ValueError("not connected to database")
+
+    user_id = await get_or_create_user_id_by_tg_id(tg_id)
 
     cursor.execute(
-        "SELECT code FROM users_subscriptions WHERE user_id = %s ORDER BY code",
+        "SELECT code1, code2 FROM users_subscriptions WHERE user_id = %s ORDER BY code1, code2",
         (user_id,),
     )
-    result = cursor.fetchall()
-    subscribed_rates = [code for (code,) in result]
-    all_rates = await get_rates()
-    for key in all_rates:
-        rates = all_rates[key]
-        return {code: rates[code] for code in rates if code in subscribed_rates}
+    codes = cursor.fetchall()
+
+    all_datetimes = list((await get_rates()).values())
+    if len(all_datetimes) < 1: raise ValueError("have no rates")
+    all_rates = all_datetimes[0]
+
+    result = []
+    for code1, code2 in codes:
+        if code1 not in all_rates: raise ValueError(f"wrong {code1=}")
+        if code2 not in all_rates: raise ValueError(f"wrong {code2=}")
+
+        usd_to_code1 = all_rates[code1]
+        usd_to_code2 = all_rates[code2]
+        result.append({
+            "code1": code1,
+            "code2": code2,
+            "rate": usd_to_code2 / usd_to_code1,
+        })
+
+    return result
 
 
-async def get_notifiable_users_subscriptions() -> dict[int : list[str]]:
+async def turn_subscription_on(tg_id: int, code1: str, code2: str) -> None:
     """
-    Get user ids and user subscriptions. Only for users with `everyday_notification` true.
-
-    Return:
-
-        {
-            user id: [currency code 1, currency code 2],
-            1215: ["USD", "RUB", "EUR"],
-        }
-
-    """
-
-    users = {}
-    cursor.execute(
-        "SELECT user_id, code FROM users_subscriptions WHERE user_id IN \
-        (SELECT user_id FROM users WHERE users.everyday_notification = true)"
-    )
-    result = cursor.fetchall()
-    for user_id, code in result:
-        if user_id not in users:
-            users[user_id] = []
-
-        users[user_id].append(code)
-
-    return users
-
-
-async def toggle_currency_in_subscriptions(user_id: int, code: str) -> None:
-    """
-    Add currency code to `users_subscriptions` table.
-    if user already subscribed - delete code from table.
+    Add currency codes to `users_subscriptions` table.
+    if user already subscribed - raise ValueError.
 
     Args:
 
     user_id - telegram user id
 
-    code - currency code
+    code1 - currency code
+    code2 - currency code
     """
 
-    code = code.upper()
+    if not cursor: raise ValueError("not connected to database")
+
+    code1 = code1.upper()
+    code2 = code2.upper()
+    all_datetimes = list((await get_rates()).values())
+    if len(all_datetimes) < 1: raise ValueError("have no rates")
+    all_rates = all_datetimes[0]
+    if code1 not in all_rates: raise ValueError(f"wrong {code1}")
+    if code2 not in all_rates: raise ValueError(f"wrong {code2}")
+    user_id = await get_or_create_user_id_by_tg_id(tg_id)
 
     user_subscriptions = await get_user_subscriptions(user_id)
-    if code in user_subscriptions:
-        cursor.execute(
-            "DELETE FROM users_subscriptions WHERE user_id = %s AND code = %s",
-            (user_id, code),
-        )
-    else:
-        cursor.execute(
-            "INSERT INTO users_subscriptions VALUES (%s, %s)", (user_id, code)
-        )
+    subscribed_codes = map(lambda x: (x["code1"], x["code2"]), user_subscriptions)
+    if (code1, code2) in list(subscribed_codes):
+        raise ValueError(f"{code1=} {code2=} already subscribed")
+    cursor.execute(
+        "INSERT INTO users_subscriptions VALUES (%s, %s, %s)", (user_id, code1, code2)
+    )
 
 
-async def get_user_currency_statuses(user_id: int) -> dict[str:bool]:
+async def turn_subscription_off(tg_id: int, code1: str, code2: str) -> None:
     """
-    Get currencies status (user subscribed or not).
+    Remove currency codes to `users_subscriptions` table.
+    if user is not subscribed - raise ValueError.
 
     Args:
 
     user_id - telegram user id
 
-    Return:
-
-    dict of currency codes as key and is user subscribed to this currency
+    code1 - currency code
+    code2 - currency code
     """
 
-    result = await get_rates()
-    for key in result:
-        all_codes = result[key]
-    if len(result) <= 0:
-        return []
+    if not cursor: raise ValueError("not connected to database")
 
-    subscriptions = await get_user_subscriptions(user_id)
+    code1 = code1.upper()
+    code2 = code2.upper()
+    user_id = await get_or_create_user_id_by_tg_id(tg_id)
 
-    return {code: code in subscriptions for code in sorted(all_codes)}
+    user_subscriptions = await get_user_subscriptions(tg_id)
+    subscribed_codes = map(lambda x: (x["code1"], x["code2"]), user_subscriptions)
+    if (code1, code2) not in list(subscribed_codes):
+        raise ValueError(f"{code1=} {code2=} not subscribed")
+    cursor.execute(
+        "DELETE FROM users_subscriptions WHERE user_id = %s AND code1 = %s AND code2 = %s",
+        (user_id, code1, code2),
+    )
+
+
+async def get_rates_to_currency(code: str) -> list[dict[str, str | float]]:
+    """
+    Get currency rates to `code`.
+
+    Args:
+
+    code - currency code
+
+    Return:
+
+    dict of currency codes as key and rate as value
+    """
+
+    if not cursor: raise ValueError("not connected to database")
+    code = code.upper()
+
+    all_datetimes = list((await get_rates()).values())
+    if len(all_datetimes) < 1: raise ValueError("have no rates")
+    all_rates = all_datetimes[0]
+
+    if code not in all_rates:
+        raise ValueError(f"wrong {code=}")
+
+    usd_to_code1 = all_rates[code]
+    result = []
+    for code1 in all_rates:
+        result.append({
+            "code1": code1,
+            "code2": code,
+            "rate": usd_to_code1 / all_rates[code1],
+        })
+
+    return result

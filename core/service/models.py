@@ -2,10 +2,6 @@ from pydantic import BaseModel
 
 
 class Rate(BaseModel):
-    code: str
+    code1: str
+    code2: str
     rate: float
-
-
-class CurrencyStatus(BaseModel):
-    code: str
-    is_subscribed: bool

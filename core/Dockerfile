@@ -1,4 +1,4 @@
-FROM python:3 as base
+FROM python:3.10 as base
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
