@@ -1,5 +1,6 @@
 # Telegram exchange rates bot
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 ![screenshot](https://raw.githubusercontent.com/e9000000000/telegram_exchange_rates_bot/development/docs/screenshot.png)
 
 ## About bot
