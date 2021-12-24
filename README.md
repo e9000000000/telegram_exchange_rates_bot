@@ -33,3 +33,5 @@ and run inside repository
 ```bash
 docker-compose up --build
 ```
+
+maybe you sould create database with name `ratesbot` if it doesn't create automatically

@@ -10,8 +10,8 @@ from aiogram.types import (
 from service.core_api import api
 
 
-RATES_BUTTON = "🗎 Rates"
-CONFIGURE_SUBSCRIPTIONS_BUTTON = "⛭ Configure subscriptions"
+RATES_BUTTON = "Rates"
+CONFIGURE_SUBSCRIPTIONS_BUTTON = "Configure subscriptions"
 
 start_keyboard = ReplyKeyboardMarkup()
 start_keyboard.add(KeyboardButton(RATES_BUTTON))
@@ -44,8 +44,8 @@ async def gen_first_currency_keyboard(page: int = 1) -> InlineKeyboardMarkup:
     """Generate keyboard for selecting first currency in "Configure subscriptions" option"""
 
     currency_keyboard = InlineKeyboardMarkup(row_width=5)
-    result = await api("/tg/rates/USD", page=page, page_size=PAGE_SIZE)
-    codes = map(lambda x: x["code2"], result["results"])
+    result = await api("/tg/rates/USD", page=page, size=PAGE_SIZE)
+    codes = map(lambda x: x["code1"], result["items"])
     for code in codes:
         button_text = f"💱{code}"
         currency_keyboard.insert(
@@ -65,11 +65,11 @@ async def gen_second_currency_keyboard(
     """Generate keyboard for selecting second currency in "Configure subscriptions" option"""
 
     currency_keyboard = InlineKeyboardMarkup(row_width=5)
-    result = await api("/tg/rates/USD", page=page, page_size=PAGE_SIZE)
-    codes = map(lambda x: x["code2"], result["results"])
+    result = await api("/tg/rates/USD", page=page, size=PAGE_SIZE)
+    codes = map(lambda x: x["code1"], result["items"])
     subscriptions = await api(f"/tg/users/{user_id}/subscriptions")
     subscriptions = filter(lambda s: s["code1"] == first_currency_code, subscriptions)
-    already_subscribed = map(lambda s: s["code2"], subscriptions)
+    already_subscribed = list(map(lambda s: s["code2"], subscriptions))
     for code in codes:
         if code in already_subscribed:
             button_text = f"✔{code}"

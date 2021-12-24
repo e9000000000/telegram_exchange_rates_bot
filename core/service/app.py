@@ -32,7 +32,6 @@ async def get_api_key(api_key_query: str = Security(api_key_query)):
     raise HTTPException(403, "Invalid api_key")
 
 
-
 def error_handler(func):
     @functools.wraps(func)
     async def wrapped(*args, **kwargs):
@@ -41,6 +40,10 @@ def error_handler(func):
         except ValueError as e:
             print(f"[WARNING] {e}")
             raise HTTPException(status_code=422, detail=str(e))
+        except Exception as e:
+            print(f"[ERROR] {e}")
+            raise HTTPException(status_code=500, detail="server error")
+
     return wrapped
 
 
@@ -65,10 +68,7 @@ async def get_user_subscribed_rates(
 )
 @error_handler
 async def turn_on_subscription(
-    tg_user_id: int,
-    code1: str,
-    code2: str,
-    api_key: APIKey = Depends(get_api_key)
+    tg_user_id: int, code1: str, code2: str, api_key: APIKey = Depends(get_api_key)
 ):
     await turn_subscription_on(tg_user_id, code1, code2)
     return {"succsess": 1}
@@ -81,10 +81,7 @@ async def turn_on_subscription(
 )
 @error_handler
 async def turn_off_subscription(
-    tg_user_id: int,
-    code1: str,
-    code2: str,
-    api_key: APIKey = Depends(get_api_key)
+    tg_user_id: int, code1: str, code2: str, api_key: APIKey = Depends(get_api_key)
 ):
     await turn_subscription_off(tg_user_id, code1, code2)
     return {"succsess": 1}
@@ -97,10 +94,9 @@ async def turn_off_subscription(
     description="Get all rates to one currency.",
 )
 @error_handler
-async def toggle_currency(
-    code: str, api_key: APIKey = Depends(get_api_key)
-):
+async def toggle_currency(code: str, api_key: APIKey = Depends(get_api_key)):
     rates = await get_rates_to_currency(code)
+    rates.sort(key=lambda x: x["code1"])
     return paginate(list(map(lambda x: Rate(**x), rates)))
 
 

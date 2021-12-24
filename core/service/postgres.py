@@ -28,7 +28,8 @@ def connect() -> None:
 def create_missing_tables() -> None:
     """Create `users` and `users_subscriptions` table if it's missing"""
 
-    if not cursor: raise ValueError("not connected to database")
+    if not cursor:
+        raise ValueError("not connected to database")
 
     cursor.execute("SELECT * FROM pg_catalog.pg_tables WHERE schemaname='public'")
     tables = cursor.fetchall()
@@ -62,14 +63,16 @@ def create_missing_tables() -> None:
 def close() -> None:
     """Close connection to database."""
 
-    if not cursor: raise ValueError("not connected to database")
+    if not cursor:
+        raise ValueError("not connected to database")
     cursor.close()
 
 
 def commit_changes() -> None:
     """Commit changes to database."""
 
-    if not cursor: raise ValueError("not connected to database")
+    if not cursor:
+        raise ValueError("not connected to database")
     cursor.execute("COMMIT")
 
 
@@ -103,7 +106,8 @@ async def get_rates(
         }
     """
 
-    if not cursor: raise ValueError("not connected to database")
+    if not cursor:
+        raise ValueError("not connected to database")
 
     sql = """
         SELECT
@@ -185,7 +189,8 @@ async def get_or_create_user_id_by_tg_id(tg_id: int) -> int:
     user id
     """
 
-    if not cursor: raise ValueError("not connected to database")
+    if not cursor:
+        raise ValueError("not connected to database")
 
     for _ in range(2):
         cursor.execute("SELECT id FROM users WHERE tg_id=%s", (tg_id,))
@@ -210,7 +215,8 @@ async def get_user_subscriptions(tg_id: int) -> list[dict[str, str | float]]:
     list of dicts with two currency codes and rate
     """
 
-    if not cursor: raise ValueError("not connected to database")
+    if not cursor:
+        raise ValueError("not connected to database")
 
     user_id = await get_or_create_user_id_by_tg_id(tg_id)
 
@@ -221,21 +227,26 @@ async def get_user_subscriptions(tg_id: int) -> list[dict[str, str | float]]:
     codes = cursor.fetchall()
 
     all_datetimes = list((await get_rates()).values())
-    if len(all_datetimes) < 1: raise ValueError("have no rates")
+    if len(all_datetimes) < 1:
+        raise ValueError("have no rates")
     all_rates = all_datetimes[0]
 
     result = []
     for code1, code2 in codes:
-        if code1 not in all_rates: raise ValueError(f"wrong {code1=}")
-        if code2 not in all_rates: raise ValueError(f"wrong {code2=}")
+        if code1 not in all_rates:
+            raise ValueError(f"wrong {code1=}")
+        if code2 not in all_rates:
+            raise ValueError(f"wrong {code2=}")
 
         usd_to_code1 = all_rates[code1]
         usd_to_code2 = all_rates[code2]
-        result.append({
-            "code1": code1,
-            "code2": code2,
-            "rate": usd_to_code2 / usd_to_code1,
-        })
+        result.append(
+            {
+                "code1": code1,
+                "code2": code2,
+                "rate": usd_to_code2 / usd_to_code1,
+            }
+        )
 
     return result
 
@@ -253,15 +264,19 @@ async def turn_subscription_on(tg_id: int, code1: str, code2: str) -> None:
     code2 - currency code
     """
 
-    if not cursor: raise ValueError("not connected to database")
+    if not cursor:
+        raise ValueError("not connected to database")
 
     code1 = code1.upper()
     code2 = code2.upper()
     all_datetimes = list((await get_rates()).values())
-    if len(all_datetimes) < 1: raise ValueError("have no rates")
+    if len(all_datetimes) < 1:
+        raise ValueError("have no rates")
     all_rates = all_datetimes[0]
-    if code1 not in all_rates: raise ValueError(f"wrong {code1}")
-    if code2 not in all_rates: raise ValueError(f"wrong {code2}")
+    if code1 not in all_rates:
+        raise ValueError(f"wrong {code1}")
+    if code2 not in all_rates:
+        raise ValueError(f"wrong {code2}")
     user_id = await get_or_create_user_id_by_tg_id(tg_id)
 
     user_subscriptions = await get_user_subscriptions(user_id)
@@ -286,7 +301,8 @@ async def turn_subscription_off(tg_id: int, code1: str, code2: str) -> None:
     code2 - currency code
     """
 
-    if not cursor: raise ValueError("not connected to database")
+    if not cursor:
+        raise ValueError("not connected to database")
 
     code1 = code1.upper()
     code2 = code2.upper()
@@ -315,11 +331,13 @@ async def get_rates_to_currency(code: str) -> list[dict[str, str | float]]:
     dict of currency codes as key and rate as value
     """
 
-    if not cursor: raise ValueError("not connected to database")
+    if not cursor:
+        raise ValueError("not connected to database")
     code = code.upper()
 
     all_datetimes = list((await get_rates()).values())
-    if len(all_datetimes) < 1: raise ValueError("have no rates")
+    if len(all_datetimes) < 1:
+        raise ValueError("have no rates")
     all_rates = all_datetimes[0]
 
     if code not in all_rates:
@@ -328,10 +346,12 @@ async def get_rates_to_currency(code: str) -> list[dict[str, str | float]]:
     usd_to_code1 = all_rates[code]
     result = []
     for code1 in all_rates:
-        result.append({
-            "code1": code1,
-            "code2": code,
-            "rate": usd_to_code1 / all_rates[code1],
-        })
+        result.append(
+            {
+                "code1": code1,
+                "code2": code,
+                "rate": usd_to_code1 / all_rates[code1],
+            }
+        )
 
     return result
