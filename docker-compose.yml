@@ -62,6 +62,6 @@ services:
     environment:
       - POSTGRES_USER
       - POSTGRES_PASSWORD
-      - POSTGRES_DB=ratesbot
+      - POSTGRES_DB=TGRATESBOT_DB_NAME
     volumes:
       - ~/pgdata:/var/lib/postgresql/data
