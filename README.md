@@ -20,15 +20,15 @@ git clone git@github.com:e9000000000/telegram_exchange_rates_bot.git
 ```
 
 Setup env variables:
-* `TGRATEBOT_TOKEN` - [telegram bot token](https://core.telegram.org/bots/api#authorizing-your-bot)
+* `TGRATESBOT_TOKEN` - [telegram bot token](https://core.telegram.org/bots/api#authorizing-your-bot)
 * `TGRATESBOT_API_KEY` - any secret sequence of numbers and letters
-* `POSTGRES_USER` - postgres username
+* `POSTGRES_USER` - postgres username (may not working if it's not `postgres`)
 * `POSTGRES_PASSWORD` - postgres password
+* `TGRATESBOT_DB_NAME` - postgres database name
 
 Optional env variables:
 * `TGRATESBOT_DB_HOST` - postgres host
 * `TGRATESBOT_DB_PORT` - postgres port
-* `TGRATESBOT_DB_NAME` - postgres database name
 
 
 and run inside repository
@@ -36,4 +36,7 @@ and run inside repository
 docker-compose up --build
 ```
 
-maybe you sould create database with name `ratesbot` if it doesn't create automatically
+maybe you sould create database if it doesn't create automatically
+```sql
+CREATE DATABASE my_db_name;
+```
